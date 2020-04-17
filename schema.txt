@@ -1,0 +1,54 @@
+users
+    _id : objectID
+    email : string
+    password : string
+    mobile : string
+    Full Name: string
+    sem_marks: [{sem 1 : number},{sem 2 : number}...]
+    other_Qualification: [{title:string, description: string}]
+    Extra_activities:[string]
+    projects:[{title:string, description: string}]
+    Certificatins: string (Remember it must be a Gooogle drive link)
+    type: (Student, company)
+    companyName : string
+    concernedPersonName : string
+    createdAt
+    updateAt
+    
+
+session 
+    token
+    user_id    
+
+company_phases_details
+    company_id:
+    title:string
+    requirement:string
+    eligibity:number
+
+
+placement_registration_details
+    student_id
+    comapany_name
+    results:[
+        {
+            phase_title
+            score
+        },
+        {
+            phase_title
+            score
+        },
+        ....
+    ]
+
+
+QnA 
+
+[{Que: string, 
+Answer: String}, {}......]
+
+
+
+
+  
