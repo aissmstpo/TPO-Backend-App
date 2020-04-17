@@ -17,6 +17,7 @@ _mailinglist
 docs/_build/
 .vscode
 instance/
+tpo-venv
 
 # Coverage reports
 htmlcov/
