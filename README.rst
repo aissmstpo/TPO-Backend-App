@@ -29,12 +29,15 @@ Local Development Environment Configuration
     git remote add upstream https://github.com/aissmstpo/TPO-Backend-App.git
 
 3. If you cloned a while ago, get the latest changes from upstream::
- 
+
     git checkout master
     git pull upstream master
 
+    # to push these changes to your fork
+    git push origin master
+
 4. Create the virtual environment for application::
-  
+
     # navigate to the TPO-Backend-App
     cd TPO-Backend-App
 
@@ -42,18 +45,22 @@ Local Development Environment Configuration
     python -m venv tpo_venv
 
     # activate the virtual environment
+    # for unix
     source tpo_venv/bin/activate
+
+    # for Windows
+    tpo_venv\Scripts\activate
 
     # install the dependencies
     pip install -r requirements.txt
-    
+
 4. Create a new topic branch (off the main project development branch) to contain your feature, change, or fix::
 
     git checkout -b <topic-branch-name>
 
 5. Commit your changes
 6. Push your topic branch up to your fork::
-    
+
     git push origin <topic-branch-name>
 
 7. Open a Pull Request with a clear title and description.
