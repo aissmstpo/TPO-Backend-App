@@ -70,3 +70,4 @@ def api_get_approved_companies():
     return jsonify(get_approved_companies())
 
 
+
