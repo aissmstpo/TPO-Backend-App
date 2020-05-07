@@ -30,3 +30,11 @@ def get_all_companies():
         return list(db["users"].find({"role":"company"},{"password":0}))
     except Exception as e:
         return e
+    
+def get_all_approved_companies():
+    try:
+        return list(db["users"].find({"role":"company"},{"approved":True},{"company_name":1},{"concerned_person":1},{"contact":1},{"email":1})
+    except Exception as e:
+        return e
+
+
