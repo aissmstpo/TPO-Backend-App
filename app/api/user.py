@@ -59,3 +59,14 @@ def login():
 @user_api_v1.route("<id>/create_profile")
 def create_profile():
     pass
+
+@user_api_v1.route("/view_companies")
+def api_get_approved_companies():
+    """
+    Get list of all approved copmanies
+    :returns: a list of approved companies with details.
+    :rtype: list
+    """
+    return jsonify(get_approved_companies())
+
+
