@@ -3,7 +3,7 @@ This module contains all API for the users.
 """
 from flask import Blueprint,jsonify
 
-from app.dao.usersDAO import get_all_users,get_all_students,get_user_by_id,get_all_companies
+from app.dao.usersDAO import get_all_users,get_all_students,get_user_by_id,get_all_companies,get_approved_companies
 
 user_api_v1 = Blueprint("user_api_v1","user_api_v1",url_prefix="/api/v1/user")
 
