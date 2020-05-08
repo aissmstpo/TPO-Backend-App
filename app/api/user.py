@@ -66,7 +66,7 @@ def create_profile():
     """
     pass
 
-@user_api_v1.route("/view_companies")
+@user_api_v1.route("/company/approved")
 def api_get_approved_companies():
     """
     Get list of all approved copmanies
