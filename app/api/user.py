@@ -4,7 +4,7 @@ This module contains all API for the users.
 from flask import Blueprint, jsonify, url_for
 
 from app.dao.usersDAO import (get_all_users, get_all_students, get_user_by_id, get_all_companies,
-                            get_approved_companies, get_approved_students)
+                            get_approved_companies, get_approved_students,register,login)
 
 user_api_v1 = Blueprint("user_api_v1","user_api_v1",url_prefix="/api/v1/user")
 
@@ -49,17 +49,17 @@ def api_get_all_companies():
     """
     return jsonify(get_all_companies())
 
-@user_api_v1.route("/register")
-def register():
+@user_api_v1.route("/register", methods = ["POST","GET"])
+def register1():
     """
     """
-    pass
+    return jsonify(register())
 
-@user_api_v1.route("/login")
-def login():
+@user_api_v1.route("/login", methods = ["POST","GET"])
+def login1():
     """
     """
-    pass
+    return jsonify(login())
 
 @user_api_v1.route("<id>/create_profile")
 def create_profile():
