@@ -1,12 +1,15 @@
 """
 This module contains all API for the users.
 """
-from flask import Blueprint, jsonify, url_for
+from flask import Blueprint, jsonify, request
 
 from app.dao.usersDAO import (get_all_users, get_all_students, get_user_by_id, get_all_companies,
-                            get_approved_companies, get_approved_students,register,login)
-
+                            get_approved_companies, get_approved_students,get_user_by_email,get_user_password_by_email,register_user)
+from app import bcrypt,login_manager
+from flask_login import login_user,current_user,logout_user
 user_api_v1 = Blueprint("user_api_v1","user_api_v1",url_prefix="/api/v1/user")
+import qrcode
+
 
 @user_api_v1.route("/")
 def api_get_all_users():
@@ -49,18 +52,103 @@ def api_get_all_companies():
     """
     return jsonify(get_all_companies())
 
-@user_api_v1.route("/register", methods = ["POST","GET"])
-def register1():
+@user_api_v1.route("/student/register", methods = ["POST","GET"])
+def api_student_register():
     """
     """
-    return jsonify(register())
+    if current_user.is_authenticated:
+        return "authenticated:"
+    user_details = request.json
+    if request.method == "POST":
+        user = get_user_by_email(user_details["email"])
+        if user is None:
+            user_details["password"] = bcrypt.generate_password_hash(user_details["password"]).decode('utf-8')
+            user_details["role"] = "student"
+            doc_id = register_user(user_details)
+            if doc_id != None:
+                return "Registered"
+            else:
+                return "Network Error"
+        else:
+            return "user already exist"
+    return jsonify()
+
+@user_api_v1.route("/company/register", methods = ["POST","GET"])
+def api_company_register():
+    """
+    """
+    if current_user.is_authenticated:
+        return "authenticated:"
+    user_details = request.json
+    if request.method == "POST":
+        user = get_user_by_email(user_details["email"])
+        if user is None:
+            user_details["password"] = bcrypt.generate_password_hash(user_details["password"]).decode('utf-8')
+            user_details["role"] = "company"
+            doc_id = register_user(user_details)
+            if doc_id != None:
+                return "Registered"
+            else:
+                return "Network Error"
+        else:
+            return "user already exist"
+    return jsonify()
+
+@user_api_v1.route("/admin/register", methods = ["POST","GET"])
+def api_admin_register():
+    """
+    """
+    if current_user.is_authenticated:
+        return "authenticated:"
+    user_details = request.json
+    if request.method == "POST":
+        user = get_user_by_email(user_details["email"])
+        if user is None:
+            user_details["password"] = bcrypt.generate_password_hash(user_details["password"]).decode('utf-8')
+            user_details["role"] = "admin"
+            doc_id = register_user(user_details)
+            if doc_id != None:
+                return "Registered"
+            else:
+                return "Network Error"
+        else:
+            return "user already exist"
+    return jsonify()
 
 @user_api_v1.route("/login", methods = ["POST","GET"])
-def login1():
+def api_login():
     """
     """
-    return jsonify(login())
+    if current_user.is_authenticated and current_user.is_active:
+        return "successful"
+    user_details = request.json
+    if request.method == "POST":
+        user = get_user_password_by_email(user_details["email"])
+        if user:
+            if bcrypt.check_password_hash(user['password'],user_details["password"]):
+                log_in = login_user(user)
+                if log_in:
+                    if user["role"] == "admin":
+                        return "admin"
+                    elif user["role"] == "student":
+                        return "student"
+                    elif user["role"] == "company":
+                        return "company"
+                else:
+                    return "Not Log in"
+            else:
+                
+                return "Wrong Password"
+        else:
+            
+            return "User Not Found"
+    return jsonify()
 
+@user_api_v1.route("/logout")
+def api_logout():
+    logout_user()
+    return "logout"
+    
 @user_api_v1.route("<id>/create_profile")
 def create_profile():
     """
@@ -127,3 +215,26 @@ def api_get_approved_students():
     :rtype: list
     """
     return jsonify(get_approved_students())
+
+@user_api_v1.route("/<id>/student/qrcode",methods = ["POST","GET"])
+def api_generate_qrcode(id):
+    user = get_user_by_id(id)
+    if user:
+            qr = qrcode.QRCode(
+            version = 1,
+            box_size =15,
+            border = 5
+            )
+            data = {
+                "roll_number":user['roll_number'],
+                "department":user['department'],
+                "class":user['class']
+                }
+            qr.add_data(data)
+            qr.make(fit = True)
+            img = qr.make_image(fill='black',back_color='white')
+            img.save('static/'+user['roll_number']+'.png')
+            return "QRCode Generated"
+    else:
+        return "ERROR QRCode is not Generated"
+    return jsonify()

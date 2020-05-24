@@ -4,9 +4,15 @@ from bson import ObjectId
 
 from app.db import get_db
 
-from flask import session,request
+from app import login_manager
+
+from flask import session
 
 db = LocalProxy(get_db)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db["users"].find_one({"_id":ObjectId(id)},{"password":0})
 
 def get_all_users():
     try:
@@ -46,37 +52,20 @@ def get_approved_students():
     except Exception as e:
         return e
 
-def login():
-    user_details = request.json
-    if request.method == "POST":
-        try:
-            user = db["users"].find_one({'username': user_details['username']})
-            if user:
-                if bcrypt.check_password_hash(user['password'],user_details["password"]):
-#                    session['username'] = user['username']
-                    return "logged in"
-                else:
-                    return "Wrong Password"
-            else:
-                return "User Not Found"
-        except Exception as e:
-            return e
-    return
+def get_user_by_email(email):
+    try:
+        return db["users"].find_one({'email': email},{"password":0})       
+    except Exception as e:
+        return e
+    
+def get_user_password_by_email(email):
+    try:
+        return db["users"].find_one({'email': email})       
+    except Exception as e:
+        return e
 
-def register():
-    user_details = request.json
-    if request.method == "POST":
-        try:
-            user = db["users"].find_one({'username': user_details['username']},{"password":0})
-            if user is None:
-                user_details["password"] = bcrypt.generate_password_hash(user_details["password"]).decode('utf-8')
-                doc_id = mongo_collection.insert_one(user_details)
-                if doc_id != None: 
-                    return "Registered"
-                else:
-                    return "Network Error"
-            else:
-                return "user already exist"
-        except Exception as e:
-            return e
-    return  ""
+def register_user(user):
+    try:
+        return db['users'].insert_one(user)
+    except Exception as e:
+        return e
