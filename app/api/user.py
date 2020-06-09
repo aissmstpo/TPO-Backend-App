@@ -5,8 +5,6 @@ from flask import Blueprint, jsonify, request
 
 from app.dao.usersDAO import (get_all_users, get_all_students, get_user_by_id, get_all_companies,
                             get_approved_companies, get_approved_students,get_user_by_email,get_user_password_by_email,register_user)
-from app import bcrypt,login_manager
-from flask_login import login_user,current_user,logout_user
 user_api_v1 = Blueprint("user_api_v1","user_api_v1",url_prefix="/api/v1/user")
 import qrcode
 
@@ -120,8 +118,10 @@ def api_get_approved_students():
     """
     return jsonify(get_approved_students())
 
-@user_api_v1.route("/<id>/student/qrcode",methods = ["POST","GET"])
-def api_generate_qrcode(id):
+@user_api_v1.route("/student/qrcode",methods = ["POST","GET"])
+def api_generate_qrcode():
+    user_details = request.json
+    id = user_details["_id"]
     user = get_user_by_id(id)
     if user:
             qr = qrcode.QRCode(

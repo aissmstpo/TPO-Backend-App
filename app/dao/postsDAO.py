@@ -4,22 +4,18 @@ from bson import ObjectId
 
 from app.db import get_db
 
-from operator import itemgetter
-
 db = LocalProxy(get_db)
 
 def get_all_posts():
     try:
-        posts = list(db["posts"].find())
-        posts.sort(key=itemgetter('updated_at'),reverse=True)
+        posts = list(db["posts"].find()).sort({"updated_at":-1})
         return posts
     except Exception as e:
         return e
 
 def get_post_by_id(company_id):
     try:        
-        posts = list(db["posts"].find({"company_id":ObjectId(company_id)}))
-        posts.sort(key=itemgetter('updated_at'),reverse=True)
+        posts = list(db["posts"].find({"company_id":ObjectId(company_id)})).sort({"updated_at":-1})
         return posts
     except Exception as e:
         return e
@@ -60,8 +56,7 @@ def update_post(post_details):
     
 def get_all_notices():
     try:
-        notices = list(db["notices"].find())
-        notices.sort(key=itemgetter('posted_date'),reverse=True)
+        notices = list(db["notices"].find()).sort({"updated_at":-1})
         return notices
     except Exception as e:
         return e
