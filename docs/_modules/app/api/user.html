@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>app.api.user &#8212; TPO  documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for app.api.user</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains all API for the users.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Blueprint</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">url_for</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">current_app</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">make_response</span>
+<span class="kn">from</span> <span class="nn">bson.json_util</span> <span class="kn">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
+<span class="kn">from</span> <span class="nn">flask_jwt_extended</span> <span class="kn">import</span> <span class="n">jwt_required</span><span class="p">,</span> <span class="n">create_access_token</span><span class="p">,</span> <span class="n">get_jwt_claims</span>
+<span class="kn">from</span> <span class="nn">app.dao.usersDAO</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_all_users</span><span class="p">,</span>
+    <span class="n">get_all_students</span><span class="p">,</span>
+    <span class="n">get_user_by_id</span><span class="p">,</span>
+    <span class="n">get_all_companies</span><span class="p">,</span>
+    <span class="n">get_approved_companies</span><span class="p">,</span>
+    <span class="n">get_approved_students</span><span class="p">,</span>
+    <span class="n">approve_user</span><span class="p">,</span>
+    <span class="n">reject_user</span><span class="p">,</span>
+    <span class="n">get_unapproved_companies</span><span class="p">,</span>
+    <span class="n">update_profile</span><span class="p">,</span>
+    <span class="n">create_profile</span><span class="p">,</span>
+    <span class="n">create_user</span><span class="p">,</span>
+    <span class="n">get_user_by_email</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">werkzeug.local</span> <span class="kn">import</span> <span class="n">LocalProxy</span>
+
+
+<div class="viewcode-block" id="expect"><a class="viewcode-back" href="../../../app.api.html#app.api.user.expect">[docs]</a><span class="k">def</span> <span class="nf">expect</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">expectedType</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">expectedType</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">input</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_bcrypt"><a class="viewcode-back" href="../../../app.api.html#app.api.user.get_bcrypt">[docs]</a><span class="k">def</span> <span class="nf">get_bcrypt</span><span class="p">():</span>
+    <span class="n">bcrypt</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s2">&quot;_bcrypt&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bcrypt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bcrypt</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">_bcrypt</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;BCRYPT&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">bcrypt</span></div>
+
+
+<div class="viewcode-block" id="get_jwt"><a class="viewcode-back" href="../../../app.api.html#app.api.user.get_jwt">[docs]</a><span class="k">def</span> <span class="nf">get_jwt</span><span class="p">():</span>
+    <span class="n">jwt</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="s2">&quot;_jwt&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">jwt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">jwt</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">_jwt</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;JWT&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">jwt</span></div>
+
+
+<span class="n">jwt</span> <span class="o">=</span> <span class="n">LocalProxy</span><span class="p">(</span><span class="n">get_jwt</span><span class="p">)</span>
+<span class="n">bcrypt</span> <span class="o">=</span> <span class="n">LocalProxy</span><span class="p">(</span><span class="n">get_bcrypt</span><span class="p">)</span>
+
+<span class="n">user_api_v1</span> <span class="o">=</span> <span class="n">Blueprint</span><span class="p">(</span><span class="s2">&quot;user_api_v1&quot;</span><span class="p">,</span> <span class="s2">&quot;user_api_v1&quot;</span><span class="p">,</span> <span class="n">url_prefix</span><span class="o">=</span><span class="s2">&quot;/api/v1/user&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="UserObject"><a class="viewcode-back" href="../../../app.api.html#app.api.user.UserObject">[docs]</a><span class="k">class</span> <span class="nc">UserObject</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">is_approved</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">email</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">role</span> <span class="o">=</span> <span class="n">role</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_approved</span> <span class="o">=</span> <span class="n">is_approved</span>
+
+<div class="viewcode-block" id="UserObject.to_json"><a class="viewcode-back" href="../../../app.api.html#app.api.user.UserObject.to_json">[docs]</a>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">loads</span><span class="p">(</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span> <span class="n">o</span><span class="p">:</span> <span class="n">o</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="api_get_all_users"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_all_users">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_all_users</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get all users details.</span>
+
+<span class="sd">    :returns: list of users with details</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_all_users</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="api_get_all_students"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_all_students">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/student&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_all_students</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get all student details.</span>
+
+<span class="sd">    :returns: list of students with details</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_all_students</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="api_get_user_by_id"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_user_by_id">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&lt;id&gt;&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_user_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a particular user details by his id.</span>
+
+<span class="sd">    :param id: Id of the user</span>
+<span class="sd">    :type id: str</span>
+<span class="sd">    :return: a dict containing user details</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_user_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="api_approve_user"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_approve_user">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&lt;id&gt;/approve&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PUT&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">api_approve_user</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">approve_user</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="n">update_user</span> <span class="o">=</span> <span class="n">get_user_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">update_user</span><span class="p">}),</span> <span class="mi">200</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span> <span class="mi">400</span></div>
+
+
+<div class="viewcode-block" id="api_reject_user"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_reject_user">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&lt;id&gt;/reject&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PUT&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">api_reject_user</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">reject_user</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s2">&quot;reason&quot;</span><span class="p">])</span>
+        <span class="n">update_user</span> <span class="o">=</span> <span class="n">get_user_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">update_user</span><span class="p">}),</span> <span class="mi">200</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span> <span class="mi">400</span></div>
+
+
+<div class="viewcode-block" id="api_create_profile"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_create_profile">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;&lt;id&gt;/create_profile&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PUT&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">api_create_profile</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">create_profile</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">}),</span> <span class="mi">200</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span> <span class="mi">400</span></div>
+
+
+<div class="viewcode-block" id="api_update_profile"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_update_profile">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;&lt;id&gt;/update_profile&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PUT&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">api_update_profile</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">update_profile</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">}),</span> <span class="mi">200</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span> <span class="mi">400</span></div>
+
+
+<div class="viewcode-block" id="api_get_all_companies"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_all_companies">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/company&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_all_companies</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get all student details.</span>
+<span class="sd">    :returns: a list of companies with details.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_all_companies</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="register"><a class="viewcode-back" href="../../../app.api.html#app.api.user.register">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/company/register&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">register</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">post_data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">()</span>
+        <span class="n">email</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;password&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;password&quot;</span><span class="p">)</span>
+        <span class="n">company_name</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;company_name&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;company name&quot;</span><span class="p">)</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;address&quot;</span><span class="p">)</span>
+        <span class="n">website</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;website&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;website&quot;</span><span class="p">)</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;address&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;address&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">)</span>
+        <span class="n">contact</span> <span class="o">=</span> <span class="n">expect</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;contact&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;contact&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)})</span>
+
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">get_user_by_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">user</span><span class="p">:</span>
+        <span class="n">errors</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;A user with the given email already exists.&quot;</span>
+
+    <span class="c1"># add validation</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="n">errors</span><span class="p">[</span><span class="s2">&quot;password&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Your password must be at least 8 characters.&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">response_object</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;fail&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">response_object</span><span class="p">),</span> <span class="mi">411</span>
+
+    <span class="n">userdata</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;company_name&quot;</span><span class="p">:</span> <span class="n">company_name</span><span class="p">,</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;company&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;website&quot;</span><span class="p">:</span> <span class="n">website</span><span class="p">,</span>
+        <span class="s2">&quot;address&quot;</span><span class="p">:</span> <span class="n">address</span><span class="p">,</span>
+        <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">bcrypt</span><span class="o">.</span><span class="n">generate_password_hash</span><span class="p">(</span>
+            <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;concerned_person&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">,</span>
+            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span>
+            <span class="s2">&quot;contact&quot;</span><span class="p">:</span> <span class="n">contact</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">create_user</span><span class="p">(</span><span class="n">userdata</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+        <span class="n">errors</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">errors</span><span class="p">),</span> <span class="mi">400</span>
+
+    <span class="n">userdata</span> <span class="o">=</span> <span class="n">get_user_by_id</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">userdata</span><span class="p">:</span>
+        <span class="n">errors</span><span class="p">[</span><span class="s2">&quot;general&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Internal error, please try again later.&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">response_object</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">response_object</span><span class="p">)),</span> <span class="mi">400</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">userdata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">userdata</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">]),</span>
+            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">userdata</span><span class="p">[</span><span class="s2">&quot;concerned_person&quot;</span><span class="p">][</span><span class="s2">&quot;email&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">userdata</span><span class="p">[</span><span class="s2">&quot;company_name&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">userdata</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;is_approved&quot;</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="s2">&quot;approved_date&quot;</span> <span class="ow">in</span> <span class="n">userdata</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">userdata</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">UserObject</span><span class="p">(</span><span class="o">**</span><span class="n">userdata</span><span class="p">)</span>
+        <span class="n">jwt</span> <span class="o">=</span> <span class="n">create_access_token</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">to_json</span><span class="p">())</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;access_token&quot;</span><span class="p">:</span> <span class="n">jwt</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">ret</span><span class="p">),</span> <span class="mi">200</span></div>
+
+
+<div class="viewcode-block" id="login"><a class="viewcode-back" href="../../../app.api.html#app.api.user.login">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/login&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">login</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="api_get_approved_companies"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_approved_companies">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/company/approved&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_approved_companies</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get list of all approved copmanies</span>
+<span class="sd">    :returns: a list of approved companies with details.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_approved_companies</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="api_get_unapproved_companies"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_unapproved_companies">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/company/unapproved&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_unapproved_companies</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get list of all approved copmanies</span>
+<span class="sd">    :returns: a list of approved companies with details.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_unapproved_companies</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="all_available_endpoints"><a class="viewcode-back" href="../../../app.api.html#app.api.user.all_available_endpoints">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/info&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">all_available_endpoints</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get all availale api endpoint details.</span>
+<span class="sd">    :return: dict containing all api endpoint details.</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;info&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">url_for</span><span class="p">(</span><span class="s2">&quot;user_api_v1.all_available_endpoints&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">all_available_endpoints</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">url_for</span><span class="p">(</span><span class="s2">&quot;user_api_v1.login&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">login</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">url_for</span><span class="p">(</span><span class="s2">&quot;user_api_v1.register&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">register</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;create profile&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">user_api_v1</span><span class="o">.</span><span class="n">url_prefix</span> <span class="o">+</span> <span class="s2">&quot;/&lt;id&gt;/create_profile&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">create_profile</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;all users&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">url_for</span><span class="p">(</span><span class="s2">&quot;user_api_v1.api_get_all_users&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">api_get_all_users</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;all students&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">url_for</span><span class="p">(</span><span class="s2">&quot;user_api_v1.api_get_all_students&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">api_get_all_students</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;all companies&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">url_for</span><span class="p">(</span><span class="s2">&quot;user_api_v1.api_get_all_companies&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">api_get_all_companies</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;particular user&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;GET &quot;</span> <span class="o">+</span> <span class="n">user_api_v1</span><span class="o">.</span><span class="n">url_prefix</span> <span class="o">+</span> <span class="s2">&quot;/&lt;id&gt;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">api_get_user_by_id</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">info</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="api_get_approved_students"><a class="viewcode-back" href="../../../app.api.html#app.api.user.api_get_approved_students">[docs]</a><span class="nd">@user_api_v1</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/student/approved&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">api_get_approved_students</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get details of all students &#39;approved by college&#39;.</span>
+<span class="sd">    :returns: a list of &#39;approved&#39; students details</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">get_approved_students</span><span class="p">())</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">TPO</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../app.html">app package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../app.html">app</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Mangesh Kumar.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
