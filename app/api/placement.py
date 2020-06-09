@@ -2,11 +2,14 @@
 This module contains all API for the placements.
 """
 from flask import Blueprint, jsonify, request
+
 from app.dao.placementsDAO import (
     approve_phase,
 )
 
 placement_api_v1 = Blueprint(
+    "placement_api_v1", "placement_api_v1", url_prefix="/api/v1/placement"
+)
 
 
 @placement_api_v1.route("/phase/approve", methods=["PUT"])
