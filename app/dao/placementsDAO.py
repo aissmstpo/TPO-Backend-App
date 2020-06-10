@@ -52,3 +52,83 @@ def suggest_date_phase(placement_id, phase_title, suggested_date):
     except PyMongoError as e:
         return e
 
+
+def get_unapproved_phases():
+    try:
+        return list(
+            db["placements"].aggregate(
+                [
+                    {"$unwind": {"path": "$phases"}},
+                    {
+                        "$match": {
+                            "phases.scheduled_date": {"$exists": False},
+                            "phases.requested_date": {"$exists": True},
+                            "phases.suggested_date": {"$exists": False},
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "users",
+                            "localField": "company_id",
+                            "foreignField": "_id",
+                            "as": "company_details",
+                        }
+                    },
+                    {"$unwind": {"path": "$company_details"}},
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "company_name": "$company_details.company_name",
+                            "email": "$company_details.concerned_person.email",
+                            "requested_date": "$phases.requested_date",
+                            "phase": "$phases.title",
+                            "phase_description": "$phases.phase_description",
+                        }
+                    },
+                ]
+            )
+        )
+    except PyMongoError as e:
+        return e
+
+
+def upcoming_phases():
+    try:
+        return list(
+            db["placements"].aggregate(
+                [
+                    {"$unwind": {"path": "$phases"}},
+                    {
+                        "$match": {
+                            "phases.scheduled_date": {
+                                "$gt": datetime(
+                                    2020, 5, 8, 0, 0, 0, tzinfo=timezone.utc
+                                )
+                            }
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "users",
+                            "localField": "company_id",
+                            "foreignField": "_id",
+                            "as": "company_details",
+                        }
+                    },
+                    {"$unwind": {"path": "$company_details"}},
+                    {
+                        "$project": {
+                            "company_name": "$company_details.company_name",
+                            "email": "$company_details.concerned_person.email",
+                            "date": "$phases.scheduled_date",
+                            "phase_title": "$phases.title",
+                            "phase_description": "$phases.phase_description",
+                            "requirement": 1,
+                        }
+                    },
+                ]
+            )
+        )
+    except PyMongoError as e:
+        return e
+
