@@ -1,12 +1,13 @@
 """
 This module contains all API for the users.
 """
-from flask import Blueprint, jsonify, url_for
+from flask import Blueprint, jsonify, request
 
 from app.dao.usersDAO import (get_all_users, get_all_students, get_user_by_id, get_all_companies,
-                            get_approved_companies, get_approved_students)
-
+                            get_approved_companies, get_approved_students,get_user_by_email,get_user_password_by_email,register_user)
 user_api_v1 = Blueprint("user_api_v1","user_api_v1",url_prefix="/api/v1/user")
+import qrcode
+
 
 @user_api_v1.route("/")
 def api_get_all_users():
@@ -49,18 +50,7 @@ def api_get_all_companies():
     """
     return jsonify(get_all_companies())
 
-@user_api_v1.route("/register")
-def register():
-    """
-    """
-    pass
-
-@user_api_v1.route("/login")
-def login():
-    """
-    """
-    pass
-
+    
 @user_api_v1.route("<id>/create_profile")
 def create_profile():
     """
@@ -127,3 +117,28 @@ def api_get_approved_students():
     :rtype: list
     """
     return jsonify(get_approved_students())
+
+@user_api_v1.route("/student/qrcode",methods = ["POST","GET"])
+def api_generate_qrcode():
+    user_details = request.json
+    id = user_details["_id"]
+    user = get_user_by_id(id)
+    if user:
+            qr = qrcode.QRCode(
+            version = 1,
+            box_size =15,
+            border = 5
+            )
+            data = {
+                "roll_number":user['roll_number'],
+                "department":user['department'],
+                "class":user['class']
+                }
+            qr.add_data(data)
+            qr.make(fit = True)
+            img = qr.make_image(fill='black',back_color='white')
+            img.save('static/'+user['roll_number']+'.png')
+            return "QRCode Generated"
+    else:
+        return "ERROR QRCode is not Generated"
+    return jsonify()
