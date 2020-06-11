@@ -8,43 +8,45 @@ from operator import itemgetter
 
 db = LocalProxy(get_db)
 
-#done
+# done
 def get_all_questions():
     try:
-        que = list(db["QnaSection"].find({"Ans":None},{"Ans":0}))
-        return que
+        return list(db["QnaSection"].find({"Ans": None}, {"Ans": 0}))
     except Exception as e:
         return e
-#done
+
+
+# done
 def add_question(qna_details):
     try:
-        qna_details['user_id'] = ObjectId(qna_details['user_id'])
-        que = db["QnaSection"].insert_one(qna_details)
-        return que
+        qna_details["user_id"] = ObjectId(qna_details["user_id"])
+        return db["QnaSection"].insert_one(qna_details)
     except Exception as e:
         return e
-#done
+
+
+# done
 def update_solution(qna_details):
     try:
-        query = {'_id': ObjectId(qna_details['_id'])}
-        new_values = {"$set":{"Ans":qna_details['Ans']}}
-        return db["QnaSection"].update_one(query,new_values)
-    
+        query = {"_id": ObjectId(qna_details["_id"])}
+        new_values = {"$set": {"Ans": qna_details["Ans"]}}
+        return db["QnaSection"].update_one(query, new_values)
+
     except Exception as e:
         return e
-#done
+
+
+# done
 def get_all_qna_by_user_id(user_id):
     try:
         user_id = ObjectId(user_id)
-        que = list(db["QnaSection"].find({"user_id":user_id}))
-        return que
+        return list(db["QnaSection"].find({"user_id": user_id}))
     except Exception as e:
         return e
+
 
 def delete_question(que_id):
     try:
-        return db["QnaSection"].remove({"_id":ObjectId(que_id)},True)
+        return db["QnaSection"].remove({"_id": ObjectId(que_id)}, True)
     except Exception as e:
         return e
-
-    

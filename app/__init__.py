@@ -10,16 +10,18 @@ from app.api.post import post_api_v1
 from app.api.post import notice_api_v1
 from app.api.qna import qna_api_v1
 
+
 class MongoJsonEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ObjectId):
             return str(obj)
         return json_util.default(obj, json_util.CANONICAL_JSON_OPTIONS)
 
+
 def create_app(config_name):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
-    app.config.from_pyfile('config.py')
+    app.config.from_pyfile("config.py")
     app.json_encoder = MongoJsonEncoder
     app.register_blueprint(user_api_v1)
     app.register_blueprint(placement_api_v1)

@@ -1,14 +1,20 @@
 """
 This module contains all API for the posts.
 """
-from flask import Blueprint, jsonify,request
+from flask import Blueprint, jsonify, request
 
 from app.dao.usersDAO import get_user_name_by_id
-from app.dao.qnaDAO import get_all_questions,add_question,update_solution,get_all_qna_by_user_id,delete_question
+from app.dao.qnaDAO import (
+    get_all_questions,
+    add_question,
+    update_solution,
+    get_all_qna_by_user_id,
+    delete_question,
+)
 
-qna_api_v1 = Blueprint("qna_api_v1","qna_api_v1",url_prefix="/api/v1/qna")
+qna_api_v1 = Blueprint("qna_api_v1", "qna_api_v1", url_prefix="/api/v1/qna")
 
-#done
+
 @qna_api_v1.route("/")
 def api_get_all_questions():
     """
@@ -23,7 +29,7 @@ def api_get_all_questions():
         que["user_name"] = user["user_name"]
     return jsonify(questions)
 
-#done
+
 @qna_api_v1.route("/role")
 def api_get_all_questions_by_role():
     """
@@ -41,11 +47,10 @@ def api_get_all_questions_by_role():
         user = get_user_name_by_id(que["user_id"])
         if user["role"] == role:
             que["user_name"] = user["user_name"]
-            questions_by_role.append(que)            
+            questions_by_role.append(que)
     return jsonify(questions_by_role)
 
 
-#done
 @qna_api_v1.route("/question/user_id")
 def api_get_all_qna_by_user_id():
     """
@@ -57,8 +62,8 @@ def api_get_all_qna_by_user_id():
     que_details = request.json
     return jsonify(get_all_qna_by_user_id(que_details["user_id"]))
 
-#done
-@qna_api_v1.route("/add",methods = ["GET","POST"])
+
+@qna_api_v1.route("/add", methods=["GET", "POST"])
 def api_add_question():
     que_details = request.json
     que_details["Ans"] = None
@@ -70,8 +75,7 @@ def api_add_question():
     return jsonify()
 
 
-#done
-@qna_api_v1.route("/update/answer",methods = ["PUT"])
+@qna_api_v1.route("/update/answer", methods=["PUT"])
 def api_update_answer():
     que_details = request.json
     if request.method == "PUT":
@@ -83,7 +87,7 @@ def api_update_answer():
     return jsonify()
 
 
-@qna_api_v1.route("/delete",methods = ["DELETE"])
+@qna_api_v1.route("/delete", methods=["DELETE"])
 def api_DELETE_question():
     que_details = request.json
     if request.method == "DELETE":
