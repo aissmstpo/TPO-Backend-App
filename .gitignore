@@ -14,7 +14,7 @@ _mailinglist
 .cache/
 .pytest_cache/
 .idea/
-docs/_build/
+# docs/_build/
 .vscode
 instance/
 tpo-venv

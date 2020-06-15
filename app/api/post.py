@@ -1,15 +1,28 @@
 """
 This module contains all API for the posts.
 """
-from flask import Blueprint, jsonify,request
+from flask import Blueprint, jsonify, request
 import datetime
 
 from app.dao.usersDAO import get_comapany_id_by_name
-from app.dao.postsDAO import (add_post, get_all_posts, get_post_by_id, update_post, delete_post, delete_all_posts, delete_post_by_company_id,
-                                 add_notice, get_all_notices, delete_notice, delete_all_notices, update_notice)
+from app.dao.postsDAO import (
+    add_post,
+    get_all_posts,
+    get_post_by_id,
+    update_post,
+    delete_post,
+    delete_all_posts,
+    delete_post_by_company_id,
+    add_notice,
+    get_all_notices,
+    delete_notice,
+    delete_all_notices,
+    update_notice,
+)
 
-post_api_v1 = Blueprint("post_api_v1","post_api_v1",url_prefix="/api/v1/post")
-notice_api_v1 = Blueprint("notice_api_v1","notice_api_v1",url_prefix="/api/v1/notice")
+post_api_v1 = Blueprint("post_api_v1", "post_api_v1", url_prefix="/api/v1/post")
+notice_api_v1 = Blueprint("notice_api_v1", "notice_api_v1", url_prefix="/api/v1/notice")
+
 
 @post_api_v1.route("/")
 def api_get_all_posts():
@@ -20,6 +33,7 @@ def api_get_all_posts():
     :rtype: list
     """
     return jsonify(get_all_posts())
+
 
 @post_api_v1.route("/company")
 def api_get_all_posts_by_company_name():
@@ -32,8 +46,11 @@ def api_get_all_posts_by_company_name():
     """
     post_details = request.json
     company_name = post_details["company_name"]
-    company_id = get_comapany_id_by_name(company_name) #it returns {"company_id":"5ea...."}
+    company_id = get_comapany_id_by_name(
+        company_name
+    )  # it returns {"company_id":"5ea...."}
     return jsonify(get_post_by_id(company_id["_id"]))
+
 
 @post_api_v1.route("/company/id")
 def api_get_all_posts_by_company_id():
@@ -49,7 +66,7 @@ def api_get_all_posts_by_company_id():
     return jsonify(get_post_by_id(company_id))
 
 
-@post_api_v1.route("/add",methods = ["GET","POST"])
+@post_api_v1.route("/add", methods=["GET", "POST"])
 def api_add_post():
     """
     add post of particular company
@@ -67,7 +84,8 @@ def api_add_post():
             return "Error in adding"
     return jsonify()
 
-@post_api_v1.route("/delete",methods = ["DELETE"])
+
+@post_api_v1.route("/delete", methods=["DELETE"])
 def api_delete_post():
     """
     delete post by id
@@ -83,7 +101,8 @@ def api_delete_post():
             return "Error in deleting"
     return jsonify()
 
-@post_api_v1.route("/delete/all",methods = ["DELETE"])
+
+@post_api_v1.route("/delete/all", methods=["DELETE"])
 def api_delete_all_posts():
     """
     delete all posts
@@ -97,7 +116,8 @@ def api_delete_all_posts():
             return "Error in deleting"
     return jsonify()
 
-@post_api_v1.route("/delete/company",methods = ["DELETE"])
+
+@post_api_v1.route("/delete/company", methods=["DELETE"])
 def api_delete_post_company():
     """
     delete post by company_name
@@ -107,7 +127,7 @@ def api_delete_post_company():
     """
     post_details = request.json
     company_name = post_details["company_name"]
-    company_id = get_comapany_id_by_name(company_name)#it returns {"_id":"5ea...."}
+    company_id = get_comapany_id_by_name(company_name)  # it returns {"_id":"5ea...."}
     print(company_id)
     if request.method == "DELETE":
         if delete_post_by_company_id(company_id["_id"]):
@@ -116,7 +136,8 @@ def api_delete_post_company():
             return "Error in deleting"
     return jsonify()
 
-@post_api_v1.route("/update",methods = ["PUT"])
+
+@post_api_v1.route("/update", methods=["PUT"])
 def api_update_post():
     """
     update post by id
@@ -133,7 +154,10 @@ def api_update_post():
             return "Error in updating"
     return jsonify()
 
+
 "________________________________________________________________________________________________________________________________________________"
+
+
 @notice_api_v1.route("/")
 def api_get_all_notices():
     """
@@ -144,7 +168,8 @@ def api_get_all_notices():
     """
     return jsonify(get_all_notices())
 
-@notice_api_v1.route("/add",methods = ["GET","POST"])
+
+@notice_api_v1.route("/add", methods=["GET", "POST"])
 def api_add_notice():
     """
     add notice
@@ -162,7 +187,8 @@ def api_add_notice():
             return "Error in adding"
     return jsonify()
 
-@notice_api_v1.route("/delete",methods = ["DELETE"])
+
+@notice_api_v1.route("/delete", methods=["DELETE"])
 def api_delete_notice():
     """
     delete notice by id
@@ -178,7 +204,8 @@ def api_delete_notice():
             return "Error in deleting"
     return jsonify()
 
-@notice_api_v1.route("/delete/all",methods = ["DELETE"])
+
+@notice_api_v1.route("/delete/all", methods=["DELETE"])
 def api_delete_all_notices():
     """
     delete all notices
@@ -192,7 +219,8 @@ def api_delete_all_notices():
             return "Error in deleting"
     return jsonify()
 
-@notice_api_v1.route("/update",methods = ["PUT"])
+
+@notice_api_v1.route("/update", methods=["PUT"])
 def api_update_notice():
     """
     update notice by id
