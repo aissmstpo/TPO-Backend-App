@@ -29,6 +29,7 @@ from app.dao.usersDAO import (
     get_unapproved_students,
     get_eligible_companies,
     get_not_eligible_companies,
+    current_placement_details,
 )
 
 from ..helpers import expect
@@ -294,6 +295,14 @@ def api_get_eligible_companies(id):
 def api_get_not_eligible_companies(id):
     try:
         return jsonify(get_not_eligible_companies(id)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@user_api_v1.route("/company/<id>/current_placement_details")
+def api_current_placement_details(id):
+    try:
+        return jsonify(current_placement_details(id)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
