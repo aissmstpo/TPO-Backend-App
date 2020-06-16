@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from werkzeug.local import LocalProxy
 
@@ -460,3 +460,84 @@ def get_not_eligible_companies(student_id):
     except PyMongoError as e:
         return e
 
+
+def current_placement_details(company_id):
+    try:
+        return (
+            db["placements"].aggregate(
+                [
+                    {"$match": {"company_id": ObjectId(company_id)}},
+                    {
+                        "$project": {
+                            "result": {
+                                "$map": {
+                                    "input": "$phases",
+                                    "as": "phase",
+                                    "in": {
+                                        "title": "$$phase.title",
+                                        "status": {
+                                            "$switch": {
+                                                "branches": [
+                                                    {
+                                                        "case": {
+                                                            "$eq": [
+                                                                "$$phase.completed",
+                                                                True,
+                                                            ]
+                                                        },
+                                                        "then": "Completed",
+                                                    },
+                                                    {
+                                                        "case": {
+                                                            "$gt": [
+                                                                "$$phase.scheduled_date",
+                                                                datetime(
+                                                                    2020,
+                                                                    5,
+                                                                    8,
+                                                                    0,
+                                                                    0,
+                                                                    0,
+                                                                    tzinfo=timezone.utc,
+                                                                ),
+                                                            ]
+                                                        },
+                                                        "then": "upcoming",
+                                                    },
+                                                    {
+                                                        "case": {
+                                                            "$eq": [
+                                                                {
+                                                                    "$ifNull": [
+                                                                        "$$phase.scheduled_date",
+                                                                        False,
+                                                                    ]
+                                                                },
+                                                                False,
+                                                            ]
+                                                        },
+                                                        "then": "pending",
+                                                    },
+                                                ],
+                                                "default": "ongoing",
+                                            }
+                                        },
+                                        "date": {
+                                            "$ifNull": [
+                                                "$$phase.scheduled_date",
+                                                "pending",
+                                            ]
+                                        },
+                                    },
+                                }
+                            },
+                            "total_appeared": {"$size": "$registered_students"},
+                            "total_passed": {"$size": "$passed_students"},
+                            "total_placed": {"$size": "$placed_students"},
+                        }
+                    },
+                ]
+            )
+        ).next()
+    except PyMongoError as e:
+        return e
