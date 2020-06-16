@@ -27,6 +27,8 @@ from app.dao.usersDAO import (
     get_unapproved_companies,
     get_approved_students,
     get_unapproved_students,
+    get_eligible_companies,
+    get_not_eligible_companies,
 )
 
 from ..helpers import expect
@@ -278,6 +280,22 @@ def api_get_unapproved_students():
     if limit:
         return jsonify(get_unapproved_students()[: int(limit)])
     return jsonify(get_unapproved_students())
+
+
+@user_api_v1.route("/student/<id>/eligible_companies")
+def api_get_eligible_companies(id):
+    try:
+        return jsonify(get_eligible_companies(id)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@user_api_v1.route("/student/<id>/not_eligible_companies")
+def api_get_not_eligible_companies(id):
+    try:
+        return jsonify(get_not_eligible_companies(id)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @user_api_v1.route("/student/qrcode", methods=["POST", "GET"])

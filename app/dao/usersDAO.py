@@ -213,3 +213,250 @@ def get_comapany_id_by_name(company_name):
         )
     except Exception as e:
         return e
+
+
+def get_eligible_companies(student_id):
+    try:
+        return (
+            db["users"]
+            .aggregate(
+                [
+                    {"$match": {"_id": ObjectId(student_id)}},
+                    {
+                        "$project": {
+                            "gender": 1,
+                            "sgpa": {"$avg": "$sem_marks"},
+                            "live_backlog": 1,
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "placements",
+                            "let": {
+                                "gender": "$gender",
+                                "sgpa": "$sgpa",
+                                "live_backlog": "$live_backlog",
+                            },
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$and": [
+                                                {
+                                                    "$or": [
+                                                        {
+                                                            "$eq": [
+                                                                "$eligibility.gender",
+                                                                "$$gender",
+                                                            ]
+                                                        },
+                                                        {
+                                                            "$eq": [
+                                                                "$eligibility.gender",
+                                                                "any",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                                {
+                                                    "$gte": [
+                                                        "$$sgpa",
+                                                        "$eligibility.sgpa",
+                                                    ]
+                                                },
+                                                {
+                                                    "$or": [
+                                                        {
+                                                            "$eq": [
+                                                                "$eligibility.live_backlog",
+                                                                "$$live_backlog",
+                                                            ]
+                                                        },
+                                                        {
+                                                            "$eq": [
+                                                                "$eligibility.live_backlog",
+                                                                True,
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            ]
+                                        }
+                                    }
+                                },
+                                {"$project": {"company_id": 1, "_id": 0}},
+                            ],
+                            "as": "eligible_companies",
+                        }
+                    },
+                    {
+                        "$project": {
+                            "eligible_companies": {
+                                "$map": {
+                                    "input": "$eligible_companies",
+                                    "as": "company",
+                                    "in": "$$company.company_id",
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "users",
+                            "let": {"eligible_companies": "$eligible_companies"},
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$in": ["$_id", "$$eligible_companies"]
+                                        }
+                                    }
+                                },
+                                {"$project": {"company_name": "$company_name"}},
+                            ],
+                            "as": "eligible_companies",
+                        }
+                    },
+                ]
+            )
+            .next()
+        )
+    except PyMongoError as e:
+        return e
+
+
+def get_not_eligible_companies(student_id):
+    try:
+        return (
+            db["users"]
+            .aggregate(
+                [
+                    {"$match": {"_id": ObjectId(student_id)}},
+                    {
+                        "$project": {
+                            "gender": 1,
+                            "sgpa": {"$avg": "$sem_marks"},
+                            "live_backlog": 1,
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "placements",
+                            "let": {
+                                "gender": "$gender",
+                                "sgpa": "$sgpa",
+                                "live_backlog": "$live_backlog",
+                            },
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$or": [
+                                                {
+                                                    "$lt": [
+                                                        "$$sgpa",
+                                                        "$eligibility.sgpa",
+                                                    ]
+                                                },
+                                                {
+                                                    "$and": [
+                                                        {
+                                                            "$not": [
+                                                                {
+                                                                    "$eq": [
+                                                                        "$eligibility.live_backlog",
+                                                                        "$$live_backlog",
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "$not": [
+                                                                {
+                                                                    "$eq": [
+                                                                        "$eligibility.live_backlog",
+                                                                        True,
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                                {
+                                                    "$and": [
+                                                        {
+                                                            "$not": [
+                                                                {
+                                                                    "$eq": [
+                                                                        "$eligibility.gender",
+                                                                        "$$gender",
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "$not": [
+                                                                {
+                                                                    "$eq": [
+                                                                        "$eligibility.gender",
+                                                                        "any",
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            ]
+                                        }
+                                    }
+                                },
+                                {"$project": {"company_id": 1, "_id": 0}},
+                            ],
+                            "as": "not_eligible_companies",
+                        }
+                    },
+                    {
+                        "$project": {
+                            "not_eligible_companies": {
+                                "$map": {
+                                    "input": "$not_eligible_companies",
+                                    "as": "company",
+                                    "in": "$$company.company_id",
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "users",
+                            "let": {
+                                "not_eligible_companies": "$not_eligible_companies"
+                            },
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$and": [
+                                                {"$eq": ["$role", "company"]},
+                                                {
+                                                    "$in": [
+                                                        "$_id",
+                                                        "$$not_eligible_companies",
+                                                    ]
+                                                },
+                                            ]
+                                        }
+                                    }
+                                },
+                                {"$project": {"company_name": "$company_name"}},
+                            ],
+                            "as": "not_eligible_companies",
+                        }
+                    },
+                ]
+            )
+            .next()
+        )
+    except PyMongoError as e:
+        return e
+
