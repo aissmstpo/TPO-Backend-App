@@ -22,6 +22,16 @@ class MongoJsonEncoder(JSONEncoder):
 
 
 def create_app(config_name):
+    """
+    Creates and returns a Flask object.
+    Different blueprints are registered on the ``app`` Flask object
+
+    :param config_name: development or production
+    :type config_name: str
+    :returns: Flask app object
+    :rtype: `flask.Flask`_
+    .. _flask.Flask: https://flask.palletsprojects.com/en/1.1.x/api/#flask.Flask
+    """
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
     app.config.from_pyfile("config.py")

@@ -85,7 +85,7 @@ def api_get_user_by_id(id):
 
     :param id: Id of the user
     :type id: str
-    :return: a dict containing user details
+    :returns: a dict containing user details
     :rtype: dict
     """
     return jsonify(get_user_by_id(id))
@@ -106,6 +106,7 @@ def api_get_all_students():
 def api_get_all_companies():
     """
     Get all student details.
+
     :returns: a list of companies with details.
     :rtype: list
     """
@@ -333,7 +334,8 @@ def api_generate_qrcode():
 def all_available_endpoints():
     """
     Get all availale api endpoint details.
-    :return: dict containing all api endpoint details.
+
+    :returns: dict containing all api endpoint details.
     :rtype: dict
     """
     info = {
