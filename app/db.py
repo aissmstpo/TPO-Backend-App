@@ -6,7 +6,11 @@ from pymongo import MongoClient
 
 def get_db():
     """
-    method to return db instance
+    Returns instance of database
+
+    :returns: ``db`` instance of database
+    :rtype: `pymongo.database.Database`_
+    .. _pymongo.database.Database: https://pymongo.readthedocs.io/en/stable/api/pymongo/database.html?highlight=Database#pymongo.database.Database
     """
     db = getattr(g, "_database", None)
     DB_URI = current_app.config["DB_URI"]

@@ -13,6 +13,17 @@ db = LocalProxy(get_db)
 
 
 def start_placement(placement_data):
+    """
+    Inserts a document containing details of the placement.
+    Returns a dictionary with success = True & the _id of the inserted document.
+
+    In case of a PyMongoError it returns the exception
+
+    :param placement_data: dictionary containing details of the placement
+    :type placement_data: dict
+    :returns: dictionary containing success = True & _id of the inserted document.
+    :rtype: dict
+    """
     try:
         result = db["placements"].insert_one(
             {
@@ -34,6 +45,18 @@ def start_placement(placement_data):
 
 
 def create_phase(phase_data):
+    """
+    Inserts a phase in the array of phases in a particular placement.
+    This phase contains a title, description & requested_date.
+    Returns a dictionary with success = True.
+
+    In case of a ValueError an exception is returned.
+
+    :param phase_data: dictionary containing details of the phase to create.
+    :type phase_data: dict
+    :returns: dictionary containing success = True
+    :rtype: dict
+    """
     try:
         result = db["placements"].update_one(
             {"_id": ObjectId(phase_data["_id"])},
@@ -59,6 +82,20 @@ def create_phase(phase_data):
 
 
 def approve_phase(placement_id, phase_title):
+    """
+    Approves the requested date for the phase of a placement.
+    Adds a field ``scheduled_date`` = ``requested_date`` in the phase.
+    Returns a dictionary with success = True.
+
+    In case of a ValueError an exception is returned.
+
+    :param placement_id: id of the placement of which phase is to be approved.
+    :type placement_id: str
+    :param phase_title: title of the phase to be approved.
+    :type phase_title: str
+    :returns: Dictionary containing success = True
+    :rtype: dict
+    """
     try:
         # type of requested_date is datetime.datetime
         requested_date = list(
@@ -82,6 +119,22 @@ def approve_phase(placement_id, phase_title):
 
 
 def suggest_date_phase(placement_id, phase_title, suggested_date):
+    """
+    Suggest a date for a phase of the placement.
+    Sets the suggested_date field of given phase.
+    Returns a dictionary with success = True.
+
+    In case of a ValueError an exception is returned.
+
+    :param placement_id: id of the placement.
+    :type placement_id: str
+    :param phase_title: title of the phase for which a date is to be suggested.
+    :type phase_title: str
+    :param suggested_date: date suggested for the phase ("YYYY-mm-dd")
+    :type suggested_date: str
+    :returns: Dictionary containing success = True
+    :rtype: dict
+    """
     try:
         result = db["placements"].update_one(
             {"_id": ObjectId(placement_id), "phases.title": phase_title},
@@ -103,6 +156,16 @@ def suggest_date_phase(placement_id, phase_title, suggested_date):
 
 
 def get_unapproved_phases():
+    """
+    This function returns the list of unapproved phases of all placements
+    These phases are dictionary containining _id, email, requested_date,
+    phase and phase_description.
+
+    In case of a PyMongoError it returns the exception.
+
+    :returns: list of unapproved phases of all placements.
+    :rtype: list
+    """
     try:
         return list(
             db["placements"].aggregate(
@@ -142,6 +205,16 @@ def get_unapproved_phases():
 
 
 def get_pending_phases():
+    """
+    This function returns the list of pending phases of all placements
+    These phases are dictionary containining company_name, email, requested_date,
+    suggested_date and phase.
+
+    In case of a PyMongoError it returns the exception.
+
+    :returns: list of pending phases of all placements.
+    :rtype: list
+    """
     try:
         return list(
             db["placements"].aggregate(
@@ -181,6 +254,16 @@ def get_pending_phases():
 
 
 def get_upcoming_phases():
+    """
+    This function returns the list of upcoming phases of all placements
+    These phases are dictionary containing company_name, email, date,
+    phase_title, phase_description and requirement.
+
+    In case of a PyMongoError it returns the exception.
+
+    :returns: list of upcoming phases of all placements.
+    :rtype: list
+    """
     try:
         return list(
             db["placements"].aggregate(
@@ -223,6 +306,16 @@ def get_upcoming_phases():
 
 # not used
 def get_registered_students(company_id):
+    """
+    Returns a list of registered students of a particular company.
+    This list contains dictionaries of students id of student and profile
+    of student containing email & full_name.
+
+    In case of a PyMongoError it returns the exception.
+
+    :returns: list of registered students of a particular company.
+    :rtype: list
+    """
     try:
         return list(
             db["placements"].aggregate(
@@ -250,6 +343,15 @@ def get_registered_students(company_id):
 
 
 def get_all_registered_students():
+    """
+    Returns a list of all registered students for every company(placement).
+    This list contains dictionaries of students having various details.
+
+    In case of a PyMongoError it returns the exception.
+
+    :returns: list of all registered students for every company(placement).
+    :rtype: list
+    """
     try:
         return list(
             db["placements"].aggregate(
@@ -281,6 +383,15 @@ def get_all_registered_students():
 
 
 def get_phase_result(company_id, phase_title):
+    """
+    Returns list of results of a particular company_id having a particular phase_title
+    containing _id, class, department, name, rollno & status of students.
+
+    In case of an PyMongoError it returns the exception
+
+    :returns: list of results
+    :rtype: list
+    """
     print(company_id, phase_title)
     try:
         return list(

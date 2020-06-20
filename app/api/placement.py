@@ -22,6 +22,18 @@ placement_api_v1 = Blueprint(
 
 @placement_api_v1.route("/start")
 def api_start_placement():
+    """
+    Starts the placement by adding the details of the placement in the database.
+    This function will send a JSON response to the browser containing
+    success = True & the _id of the inserted document &
+    a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         try:
             post_data = request.get_json()
@@ -41,6 +53,17 @@ def api_start_placement():
 
 @placement_api_v1.route("/phase/create")
 def api_create_phase():
+    """
+    Creates a new phase in placement by adding the details of the phase in the database.
+    This function will send a JSON response to the browser containing
+    success = True and a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         try:
             post_data = request.get_json()
@@ -57,6 +80,17 @@ def api_create_phase():
 
 @placement_api_v1.route("/phase/approve", methods=["PUT"])
 def api_approve_phase():
+    """
+    Approves the requested date for the phase of a placement.
+    This function will send a JSON response to the browser containing
+    success = True and a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         try:
             post_data = request.get_json()
@@ -71,6 +105,17 @@ def api_approve_phase():
 
 @placement_api_v1.route("/phase/suggest_date", methods=["PUT"])
 def api_suggest_date_phase():
+    """
+    Suggests a date for a phase of the placement.
+    This function will send a JSON response to the browser containing
+    success = True and a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         try:
             post_data = request.get_json()
@@ -89,6 +134,20 @@ def api_suggest_date_phase():
 
 @placement_api_v1.route("/phase/unapproved")
 def api_get_unapproved_phases():
+    """
+    Returns a list of unapproved phases of all placements and a 200 OK status code.
+    If a limit is passed in the request then list contains no more than ``limit``
+    number of unapproved phases.
+
+    This function will send a JSON response to the browser containing
+    list of unapproved phases and a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         limit = request.args.get("limit", None)
         if limit:
@@ -100,6 +159,20 @@ def api_get_unapproved_phases():
 
 @placement_api_v1.route("/phase/upcoming", methods=["GET"])
 def api_upcoming_phases():
+    """
+    Returns a list of upcoming phases of all placements and a 200 OK status code.
+    If a limit is passed in the request then list contains no more than ``limit``
+    number of upcoming phases.
+
+    This function will send a JSON response to the browser containing
+    list of upcoming phases and a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         limit = request.args.get("limit", None)
         if limit:
@@ -111,6 +184,20 @@ def api_upcoming_phases():
 
 @placement_api_v1.route("/phase/pending", methods=["GET"])
 def api_get_upcoming_phases():
+    """
+    Returns a list of pending phases of all placements and a 200 OK status code.
+    If a limit is passed in the request then list contains no more than ``limit``
+    number of pending phases.
+
+    This function will send a JSON response to the browser containing
+    list of pending phases and a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+
+    :returns: tuple of dictionary and status code
+    :rtype: tuple
+    """
     try:
         limit = request.args.get("limit", None)
         if limit:
@@ -122,6 +209,14 @@ def api_get_upcoming_phases():
 
 @placement_api_v1.route("/phase/result", methods=["GET"])
 def api_get_phase_result():
+    """
+    This function will send a JSON response to the browser containing
+    results of a particular company & phase &
+    a 200 OK status code.
+
+    In case of an Exception it sends a JSON response containing the errors &
+    a 400 Bad Request status code.
+    """
     try:
         company_id = expect(request.args["company_id"], str, "Company id")
         phase_title = expect(request.args["phase_title"], str, "Phase title")
