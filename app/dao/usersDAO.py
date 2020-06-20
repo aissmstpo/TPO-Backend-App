@@ -82,8 +82,6 @@ def reject_user(id, reason):
 
 def create_profile(id, profile_data):
     try:
-        print(profile_data)
-        db["users"].find_one({"_id": ObjectId(id)})
         result = db["users"].update_one(
             {"_id": ObjectId(id)}, {"$set": {"profile_completed": True, **profile_data}}
         )
