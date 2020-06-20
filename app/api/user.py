@@ -156,7 +156,7 @@ def api_update_profile(id):
 
 
 @user_api_v1.route("/company/register", methods=["POST"])
-def register():
+def company_register():
     try:
         post_data = request.get_json()
         email = expect(post_data["email"], str, "email")
@@ -199,6 +199,7 @@ def register():
             "email": email,
             "contact": contact,
         },
+        "profile_completed": True,
     }
 
     result = create_user(userdata)
@@ -240,18 +241,30 @@ def login():
         return jsonify({"error": str(e)})
     errors = {}
     user = get_user_by_email(email)
-    if user:
-        errors["email"] = "A user with the given email already exists."
+    if not user:
+        errors["email"] = "No user with the given email already exists."
     # add validation
-    if bcrypt.check_password_hash(user["password"], password):
+    if not bcrypt.check_password_hash(user["password"], password):
         errors["password"] = "Invalid password!"
-    userdata = {
-        "id": str(user["_id"]),
-        "email": user["concerned_person"]["email"],
-        "name": user["company_name"],
-        "role": user["role"],
-        "is_approved": True if "approved_date" in user else False,
-    }
+    if len(errors) != 0:
+        return jsonify({"error": errors})
+    print(user)
+    if user["role"] == "company":
+        userdata = {
+            "id": str(user["_id"]),
+            "email": user.get("concerned_person").get("email"),
+            "name": user.get("company_name"),
+            "role": user["role"],
+            "is_approved": True if "approved_date" in user else False,
+        }
+    else:
+        userdata = {
+            "id": str(user["_id"]),
+            "email": user.get("email"),
+            "name": user.get("full_name",""),
+            "role": user["role"],
+            "is_approved": True if "approved_date" in user else False,
+        }
     user = UserObject(**userdata)
     jwt = create_access_token(user.to_json())
     ret = {"access_token": jwt}
@@ -306,6 +319,64 @@ def api_current_placement_details(id):
         return jsonify(current_placement_details(id)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+@user_api_v1.route("/student/register", methods=["POST"])
+def student_register():
+    try:
+        post_data = request.get_json()
+        email = expect(post_data["email"], str, "email")
+        password = expect(post_data["password"], str, "password")
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+    errors = {}
+    user = get_user_by_email(email)
+    if user:
+        errors["email"] = "A user with the given email already exists."
+
+    # add validation
+    if len(password) < 8:
+        errors["password"] = "Your password must be at least 8 characters."
+
+    if len(errors.keys()) != 0:
+        response_object = {"status": "fail", "error": errors}
+        return jsonify(response_object), 411
+
+    userdata = {
+        "role": "student",
+        "password": bcrypt.generate_password_hash(
+            password=password.encode("utf8")
+        ).decode("utf-8"),
+        "email": email,
+        "profile_completed": False,
+    }
+
+    result = create_user(userdata)
+    if "error" in result:
+        errors["email"] = result["error"]
+        return jsonify(errors), 400
+
+    userdata = get_user_by_id(result["_id"])
+
+    if not userdata:
+        errors["general"] = "Internal error, please try again later."
+
+    if len(errors.keys()) != 0:
+        response_object = {"error": errors}
+        return make_response(jsonify(response_object)), 400
+    else:
+        userdata = {
+            "id": str(userdata["_id"]),
+            "email": userdata["email"],
+            "role": userdata["role"],
+            "name": userdata.get("full_name", ""),
+            "is_approved": True if "approved_date" in userdata else False,
+        }
+        user = UserObject(**userdata)
+        jwt = create_access_token(user.to_json())
+        ret = {"access_token": jwt}
+        return jsonify(ret), 200
 
 
 @user_api_v1.route("/student/qrcode", methods=["POST", "GET"])
