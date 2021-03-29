@@ -24,7 +24,7 @@ packaging==20.3
 pathspec==0.8.0
 pycodestyle==2.6.0
 pycparser==2.20
-Pygments==2.6.1
+Pygments==2.7.4
 PyJWT==1.7.1
 pymongo==3.10.1
 pyparsing==2.4.7
